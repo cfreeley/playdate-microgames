@@ -28,8 +28,8 @@ function myGameSetUp()
     assert( playerImage ) -- make sure the image was where we thought
 
     playerSprite = gfx.sprite.new( playerImage )
-    playerSprite:moveTo( 200, 120 ) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
-    playerSprite:add() -- This is critical!
+    -- playerSprite:moveTo( 200, 120 ) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
+    -- playerSprite:add() -- This is critical!
 
 end
 
@@ -47,33 +47,12 @@ vspeed, hspeed, gravity, friction = 0, 0, 1, .9
 BOTTOM, TOP, LEFT, RIGHT = 240,0,0,400
 rooms = { dialogue= runDialogue }
 function playdate.update()
-
-    if playerSprite.y >= BOTTOM or playerSprite.y <= TOP then
-        vspeed = vspeed * -1
-    else
-        vspeed = math.min(20, gravity + vspeed)
-    end   
-    
-    rot = playdate.getCrankTicks(360)
-    if playerSprite.x >= RIGHT or playerSprite.x <= LEFT then
-        hspeed = hspeed * -1
-    elseif rot ~= nil and rot ~= 0 then
-        hspeed = hspeed + (rot / 20)
-    elseif hspeed ~= 0 then
-        hspeed = hspeed * friction
-    end   
-    
-    ypos = playerSprite.y + vspeed
-    playerSprite:moveBy( hspeed, vspeed )
-
-    playerSprite:setRotation(playerSprite:getRotation() + rot)
-
     -- Call the functions below in playdate.update() to draw sprites and keep
     -- timers updated. (We aren't using timers in this example, but in most
     -- average-complexity games, you will.)
 
     gfx.sprite.update()
     playdate.timer.updateTimers()
-    runBoxes()
+    runDialogue()
 
 end

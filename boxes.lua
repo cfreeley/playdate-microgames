@@ -5,9 +5,26 @@ import "CoreLibs/timer"
 import "CoreLibs/crank"
 import "CoreLibs/keyboard"
 
-function buttonBox(x, y, w, h)
-    playdate.graphics.drawRect(x, y, w, h)
+local gfx <const> = playdate.graphics
+
+-- box logic
+
+function drawBox(x, y, w, h)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRect(x, y, w, h)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawRect(x, y, w, h)
 end
+
+function buttonBox(x, y, w, h)
+    drawBox(x, y, w, h)
+
+    ball_x, ball_y, ball_r = x + (w/2), y + (h/2), 16
+    
+    gfx.drawCircleAtPoint(x+(w/2), y+(h/2), 16)
+end
+
+-- box manage + layout
 
 screen_w, screen_h = playdate.display.getWidth(), playdate.display.getHeight()
 box_w, box_h = 120, 120
@@ -57,7 +74,16 @@ end
 boxIndex = 1
 setBox(boxIndex)
 function runBoxes()
-    playdate.graphics.drawRect(box_w * 3, 0, box_w * 3, screen_h)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRect(box_w * 3, 0, box_w * 3, screen_h)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.setDitherPattern(.5)
+    gfx.fillRect(0, 0, box_w * 3, screen_h)
+    gfx.setDitherPattern(.9)
+    gfx.fillRect(box_w * 3, 0, box_w * 3, screen_h)
+    gfx.setDitherPattern(0)
+    gfx.drawRect(box_w * 3, 0, box_w * 3, screen_h)
+
     for i = 1, #currentBoxes do
         currentBoxes[i].run(currentBoxes[i].x, currentBoxes[i].y, box_w, box_h)
     end

@@ -5,6 +5,35 @@ import "CoreLibs/timer"
 import "CoreLibs/crank"
 import "CoreLibs/keyboard"
 
+-- Declaring this "gfx" shorthand will make your life easier. Instead of having
+-- to preface all graphics calls with "playdate.graphics", just use "gfx."
+-- Performance will be slightly enhanced, too.
+-- NOTE: Because it's local, you'll have to do it in every .lua source file.
+
+local gfx <const> = playdate.graphics
+local bobSprite = nil
+local bobOpenImg, bobCloseImg
+
+
+-- A function to set up our game environment.
+
+function initGraphics()
+
+    bobOpenImg = gfx.image.new("Images/bobHappy")
+    bobCloseImg = gfx.image.new("Images/bobSmile")
+
+    bobSprite = gfx.sprite.new( bobOpenImg )
+    bobSprite:moveTo( 200, 120 ) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
+    bobSprite:add() -- This is critical!
+
+end
+
+-- Now we'll call the function above to configure our game.
+-- After this runs (it just runs once), nearly everything will be
+-- controlled by the OS calling `playdate.update()` 30 times a second.
+
+initGraphics()
+
 introText = {
     "Hello, your name is Joe. right?",
     "Excellent! Welcome to the Button Factory.\nWe're excited to have you join our family.",
@@ -18,13 +47,23 @@ onboardCrankText = {
 }
 
 conversations = { introText, onboardCrankText }
-convIndex = 1
-textIndex = 1
+convIndex, textIndex, animIdx, chatIdx = 1, 1, 1, 1
+
 -- returns if still active
 function runDialogue()
-    playdate.graphics.drawText(conversations[convIndex][textIndex], 16, 16)
+    curTxt = conversations[convIndex][textIndex]
+    gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
+
+    animIdx += 1
+    if (animIdx % 4 == 0) then
+        chatIdx += 1
+    end
+
+    bobSprite:setImage((chatIdx % 2 == 1 or animIdx > curTxt:len()) and bobCloseImg or bobOpenImg)
 
     if playdate.buttonJustReleased(playdate.kButtonA) then
+        animIdx = 0
+        chatIdx = 0
         textIndex = textIndex + 1
     end
 
@@ -33,5 +72,7 @@ function runDialogue()
         convIndex = convIndex + 1
         return false
     end
+
+    -- gfx.sprite.update()
     return true
 end
