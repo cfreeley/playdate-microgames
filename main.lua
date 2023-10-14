@@ -9,6 +9,8 @@ import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
 import "CoreLibs/crank"
+import "dialogue"
+import "boxes"
 
 -- Declaring this "gfx" shorthand will make your life easier. Instead of having
 -- to preface all graphics calls with "playdate.graphics", just use "gfx."
@@ -43,6 +45,7 @@ myGameSetUp()
 
 vspeed, hspeed, gravity, friction = 0, 0, 1, .9
 BOTTOM, TOP, LEFT, RIGHT = 240,0,0,400
+rooms = { dialogue= runDialogue }
 function playdate.update()
 
     if playerSprite.y >= BOTTOM or playerSprite.y <= TOP then
@@ -71,5 +74,6 @@ function playdate.update()
 
     gfx.sprite.update()
     playdate.timer.updateTimers()
+    runBoxes()
 
 end
