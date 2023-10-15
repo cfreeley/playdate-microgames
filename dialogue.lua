@@ -4,6 +4,7 @@ import "CoreLibs/sprites"
 import "CoreLibs/timer"
 import "CoreLibs/crank"
 import "CoreLibs/keyboard"
+import "boxes"
 
 -- Declaring this "gfx" shorthand will make your life easier. Instead of having
 -- to preface all graphics calls with "playdate.graphics", just use "gfx."
@@ -25,14 +26,19 @@ function initGraphics()
     bobSprite = gfx.sprite.new( bobOpenImg )
     bobSprite:moveTo( 200, 120 ) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
     bobSprite:add() -- This is critical!
+    bobSprite:setVisible(false)
 
 end
 
--- Now we'll call the function above to configure our game.
--- After this runs (it just runs once), nearly everything will be
--- controlled by the OS calling `playdate.update()` 30 times a second.
-
 initGraphics()
+
+function offloadDialogue()
+    bobSprite:setVisible(false)
+end
+
+lossConvos = {
+    button={"Oh buddy, what happened?\nYou didn't press the button in time!", "I'm gonna have to dock that from your pay.\nLet's try again, huh?"}
+}
 
 introText = {
     "Hello, your name is Joe. right?",
@@ -51,7 +57,14 @@ convIndex, textIndex, animIdx, chatIdx = 1, 1, 1, 1
 
 -- returns if still active
 function runDialogue()
-    curTxt = conversations[convIndex][textIndex]
+    bobSprite:setVisible(true)
+    curConv = conversations[convIndex]
+    
+    if lossReason ~= nil then
+        curConv = lossConvos[lossReason]
+    end
+
+    curTxt = curConv[textIndex]
     gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
 
     animIdx += 1
@@ -62,14 +75,19 @@ function runDialogue()
     bobSprite:setImage((chatIdx % 2 == 1 or animIdx > curTxt:len()) and bobCloseImg or bobOpenImg)
 
     if playdate.buttonJustReleased(playdate.kButtonA) then
-        animIdx = 0
-        chatIdx = 0
-        textIndex = textIndex + 1
+        if animIdx < curTxt:len() then
+            animIdx = curTxt:len()
+        else
+            animIdx = 0
+            chatIdx = 0
+            textIndex = textIndex + 1
+        end
     end
 
-    if textIndex > #conversations[convIndex] then
+    if textIndex > #curConv then
         textIndex = 1
         convIndex = convIndex + 1
+        lossReason = nil
         return false
     end
 
