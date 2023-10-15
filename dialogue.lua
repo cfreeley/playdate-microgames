@@ -66,8 +66,8 @@ onboardHourglassText = {
 }
 
 onboardBoatText = {
-    "Greetings from the Carribean!\n",
-    "I decided to take a well-deserved vacation.\nProblem is I need to take a nap, but someone\nneeds to steer my yacht.",
+    "Greetings from the Carribean!\nGlad we could connect over video call.",
+    "I decided to take a well-deserved vacation.\nProblem is I want to take a nap, but someone\nneeds to steer my yacht.",
     "If you could give a hand, that'd be great.\nYou can use \"LEFT\" and \"RIGHT\" to remotely steer.\nPretty cool, right?",
     "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass."
 }
@@ -77,10 +77,11 @@ victoryText = {
 }
 
 conversations = { introText, onboardCrankText, onboardHourglassText, onboardBoatText, victoryText }
-convIndex, textIndex, animIdx, chatIdx = 1, 1, 1, 1
+textIndex, animIdx, chatIdx, blinkIndx = 1, 1, 1, 1
 
 -- returns if still active
 function runDialogue()
+    local convIndex = boxIndex
     bobSprite:setVisible(true)
     curConv = conversations[convIndex]
 
@@ -91,9 +92,19 @@ function runDialogue()
     curTxt = curConv[textIndex] or ":)"
     gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
 
+    if convIndex >= 4 then
+        gfx.drawRect(bobSprite.x - 40, bobSprite.y -30, 80, 60)
+        if blinkIndx % 2 == 1 then
+            gfx.fillCircleAtPoint(bobSprite.x - 32, bobSprite.y - 22, 4)
+        end
+    end
+
     animIdx += 1
     if (animIdx % 4 == 0) then
         chatIdx += 1
+    end
+    if (animIdx % 24 == 20) then
+        blinkIndx += 1
     end
 
     bobSprite:setImage((chatIdx % 2 == 1 or animIdx > curTxt:len()) and bobCloseImg or bobOpenImg)

@@ -273,6 +273,7 @@ layouts = {
 currentBoxes = {}
 
 function setBox(bIndx)
+    boxIndex = bIndx
     time_limit = 250 + (bIndx * 50)
     currentBoxes = {}
     for i = 1, #layouts[bIndx] do
@@ -310,7 +311,9 @@ offloadBoxes()
 function runBoxes()
     bgSprite:setVisible(true)
     gfx.sprite.redrawBackground()
-    timer += 1
+    if not is_endless then
+        timer += 1
+    end
     time_out = timer < time_limit
 
     for i = 1, #currentBoxes do
@@ -318,8 +321,7 @@ function runBoxes()
     end
 
     if (timer >= time_limit and lossReason == nil) then
-        boxIndex += 1
-        setBox(boxIndex)
+        setBox(boxIndex + 1)
     end
 
     return time_out and lossReason == nil
