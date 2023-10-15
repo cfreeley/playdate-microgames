@@ -12,13 +12,13 @@ lossReason = nil
 local alarmSprite = nil
 local alarmOff = gfx.image.new("Images/alarmOff")
 local alarmOn = gfx.image.new("Images/alarmOn")
-alarmSprite = gfx.sprite.new( alarmOff )
+alarmSprite = gfx.sprite.new(alarmOff)
 alarmSprite:add()
 
 local victSprite = nil
 local victOn = gfx.image.new("Images/victrolaLoud")
 local victOff = gfx.image.new("Images/victrolaQuiet")
-victSprite = gfx.sprite.new( victrolaLoud )
+victSprite = gfx.sprite.new(victrolaLoud)
 victSprite:add()
 local popSong = snd.sampleplayer.new("Audio/pop")
 
@@ -31,7 +31,7 @@ end
 
 function drawBackground()
     local thermo_per = 1 - math.min(timer / time_limit, 1)
-    local thermo_len = (screen_h - 20) -thermo_per * (screen_h - 20)
+    local thermo_len = (screen_h - 20) - thermo_per * (screen_h - 20)
 
     -- layout UX
     gfx.setColor(gfx.kColorWhite)
@@ -66,10 +66,10 @@ end
 
 alarmTimer, alarmLen = 0, 30
 local function buttonBox(x, y, w, h)
-    ball_x, ball_y, ball_r = x + (w/2), y + (h/2), 16
+    ball_x, ball_y, ball_r = x + (w / 2), y + (h / 2), 16
     alarmSprite:setVisible(true)
     alarmSprite:moveTo(ball_x, ball_y - 20)
-    
+
     alarmTimer += 1
     if alarmTimer == alarmLen then
         alarmSprite:setImage(alarmOn)
@@ -82,14 +82,14 @@ local function buttonBox(x, y, w, h)
         alarmSprite:setImage(alarmOff)
     end
 
-    gfx.drawTextAligned("B", ball_x, ball_y + 12, kTextAlignment.center )
+    gfx.drawTextAligned("B", ball_x, ball_y + 12, kTextAlignment.center)
     gfx.drawCircleAtPoint(ball_x, ball_y + 20, ball_r)
 end
 
 crankIdx = 0
 local function crankBox(x, y, w, h)
     if not popSong:isPlaying() then
-        popSong:setFinishCallback(function () gameOver("crank") end)
+        popSong:setFinishCallback(function() gameOver("crank") end)
         popSong:play()
     end
 
@@ -105,7 +105,47 @@ local function crankBox(x, y, w, h)
 
     victSprite:setVisible(true)
     victSprite:setImage((crankIdx % 2 == 1) and victOn or victOff)
-    victSprite:moveTo(x + (w/2), y + (h/2))
+    victSprite:moveTo(x + (w / 2), y + (h / 2))
+end
+
+hour_idx, hour_len = 0, 200
+flip_idx = 0
+local function hourglassBox(x, y, w, h)
+    hour_idx += 1
+    padding, max_pad = 30, w / 2
+    hour_per = (hour_idx / hour_len)
+    sand_pad = (max_pad - padding) * hour_per ^ 1.8
+
+    if flip_idx == 1 then
+        y -= 10
+        flip_idx += 1
+    elseif flip_idx == 2 then
+        y += 10
+        flip_idx = 0
+    end
+
+    if playdate.buttonJustPressed(playdate.kButtonDown) then
+        flip_idx = 1
+        hour_idx = hour_len - hour_idx
+    end
+
+    if hour_per > 1 then
+        gameOver("sand")
+    end
+
+    gfx.setDitherPattern(.5)
+    gfx.fillTriangle(x + padding + sand_pad, y + padding + sand_pad, x + w - padding - sand_pad, y + padding + sand_pad,
+        x + (w / 2), y + (h / 2))
+
+    gfx.fillTriangle(x + padding, y + h - padding, x + w - padding, y + h - padding, x + (w / 2), y + (h / 2))
+    gfx.setColor(gfx.kColorWhite)
+    gfx.setDitherPattern(0)
+    gfx.fillTriangle(x + padding + sand_pad, y + h - padding - sand_pad, x + w - padding - sand_pad, y + h - padding -
+    sand_pad, x + (w / 2), y + (h / 2))
+
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawTriangle(x + padding, y + padding, x + w - padding, y + padding, x + (w / 2), y + (h / 2))
+    gfx.drawTriangle(x + padding, y + h - padding, x + w - padding, y + h - padding, x + (w / 2), y + (h / 2))
 end
 
 -- box manage + layout
@@ -116,22 +156,27 @@ buffer_w, buffer_x = screen_w - (box_w * 3), box_w * 3
 mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
-boxes = { crankBox, buttonBox }
+boxes = {
+    hourglassBox,
+    buttonBox,
+    crankBox,
+}
+
 layouts = {
     -- initial: center
     { { x = mid_x - half_w, y = mid_y - half_h, } },
     -- 2: parallel
-    { { x = 40, y = mid_y - half_h, }, { x = 200, y = mid_y - half_h, } },
+    { { x = 40, y = mid_y - half_h, },            { x = 200, y = mid_y - half_h, } },
     -- 3: T-shape
-    { { x = 40, y = 0, }, { x = 200, y = 0, }, { x = mid_x - half_w, y = mid_y, } },
+    { { x = 40, y = 0, },                         { x = 200, y = 0, },             { x = mid_x - half_w, y = mid_y, } },
     -- 4: small grid
-    { 
+    {
         { x = 40, y = 0, }, { x = 200, y = 0, },
         { x = 40, y = mid_y, }, { x = 200, y = mid_y, }
     },
     -- 5: trapezoid
     {
-        { x = 0, y = 0, }, { x = box_w, y = 0, }, { x = box_w * 2, y = 0, },
+        { x = 0,  y = 0, }, { x = box_w, y = 0, }, { x = box_w * 2, y = 0, },
         { x = 40, y = mid_y, }, { x = 200, y = mid_y, }
     },
     -- 6: full grid
@@ -162,17 +207,17 @@ setBox(boxIndex)
 function offloadBoxes()
     timer = 0
     bgSprite:setVisible(false)
-    
+
     alarmSprite:setVisible(false)
     alarmSprite:setImage(alarmOff)
     alarmTimer = -20
 
     victSprite:setVisible(false)
 
-    popSong:setFinishCallback(function () end)
+    popSong:setFinishCallback(function() end)
     popSong:stop()
-    
 end
+
 offloadBoxes()
 
 function runBoxes()
