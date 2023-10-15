@@ -53,7 +53,11 @@ onboardCrankText = {
     "Hey Joe- are you busy?", "No? Wonderful!", "Can you keep an eye on this victrola?", "This music helps productivity but it needs to be\ncranked. If you ever hear the song start to\nrun out, just start cranking.", "And don't forget to keep pressing that button!"
 }
 
-conversations = { introText, onboardCrankText }
+victoryText = {
+    "Congratulations, you did it!", "You're position is no longer required and\nyour employment has been released!"
+}
+
+conversations = { introText, onboardCrankText, victoryText }
 convIndex, textIndex, animIdx, chatIdx = 1, 1, 1, 1
 
 -- returns if still active
@@ -81,14 +85,18 @@ function runDialogue()
         else
             animIdx = 0
             chatIdx = 0
-            textIndex = textIndex + 1
+            textIndex += 1
         end
     end
 
     if textIndex > #curConv then
+        if lossReason == nil and convIndex <= #conversations then
+            convIndex += 1
+        else 
+            lossReason = nil
+        end
+
         textIndex = 1
-        convIndex = convIndex + 1
-        lossReason = nil
         return false
     end
 

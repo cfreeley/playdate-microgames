@@ -64,7 +64,7 @@ function gameOver(reason)
     lossReason = reason
 end
 
-alarmTimer, alarmLen = 0, 20
+alarmTimer, alarmLen = 0, 30
 local function buttonBox(x, y, w, h)
     ball_x, ball_y, ball_r = x + (w/2), y + (h/2), 16
     alarmSprite:setVisible(true)
@@ -98,11 +98,8 @@ local function crankBox(x, y, w, h)
     end
 
     cTicks = playdate.getCrankTicks(12)
-    print(popSong:getOffset())
     if math.abs(cTicks) > 0 then
-        print('?')
-        popSong:setOffset(popSong:getOffset() - math.abs(cTicks / 6))
-        -- popSong:playAt(popSong:getOffset())
+        popSong:setOffset(math.max(popSong:getOffset() - math.abs(cTicks / 3), 0))
         print(popSong:getOffset())
     end
 
@@ -119,7 +116,7 @@ buffer_w, buffer_x = screen_w - (box_w * 3), box_w * 3
 mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
-boxes = { buttonBox, crankBox }
+boxes = { crankBox, buttonBox }
 layouts = {
     -- initial: center
     { { x = mid_x - half_w, y = mid_y - half_h, } },
@@ -159,7 +156,7 @@ function setBox(bIndx)
 end
 
 local boxIndex = 1
-timer, time_limit = 0, 500
+timer, time_limit = 0, 400
 setBox(boxIndex)
 
 function offloadBoxes()
