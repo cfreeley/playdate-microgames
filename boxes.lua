@@ -6,6 +6,7 @@ import "CoreLibs/crank"
 import "CoreLibs/keyboard"
 
 local gfx <const> = playdate.graphics
+local geo <const> = playdate.geometry
 local snd <const> = playdate.sound
 lossReason = nil
 
@@ -142,7 +143,7 @@ local function hourglassBox(x, y, w, h)
     gfx.setColor(gfx.kColorWhite) -- erase small triangle off full triangle to make sand pool
     gfx.setDitherPattern(0)
     gfx.fillTriangle(x + padding + sand_pad, y + h - padding - sand_pad, x + w - padding - sand_pad, y + h - padding -
-    sand_pad, x + (w / 2), y + (h / 2))
+        sand_pad, x + (w / 2), y + (h / 2))
 
     -- sand line
     gfx.setColor(gfx.kColorBlack)
@@ -157,6 +158,75 @@ local function hourglassBox(x, y, w, h)
     gfx.fillRect(x + padding - 1, y + h - padding, w - (padding * 2) + 2, 3)
 end
 
+function makeGlacier(x, y, r, v)
+    sqrtHalf = (1 / 2) ^ (1 / 2)
+    points = { { x = x,       y = y - r }, { x = x + (r * sqrtHalf), y = y - (r * sqrtHalf) },
+        { x = x + (r * sqrtHalf), y = y + (r * sqrtHalf) },
+        { x = x - (r * sqrtHalf), y = y + (r * sqrtHalf) }, { x = x - (r * sqrtHalf), y = y - (r * sqrtHalf) } }
+
+    for i = 1, #points do
+        points[i].x += math.random(-v, v)
+        points[i].y += math.random(-v, v)
+        points[i] = geo.point.new(points[i].x, points[i].y)
+    end
+    points[6] = points[1]
+    return geo.polygon.new(table.unpack(points))
+end
+
+glaciers, boat_x, flip_wave = {}, 0, 0
+local function boatBox(x, y, w, h)
+    -- if timer % 30 == 0 then
+    --     flip_wave += 1
+    -- end
+    -- gfx.setDitherPattern(flip_wave % 2 == 0 and .9 or .8)
+    -- gfx.fillRect(x, y, w, h)
+    -- gfx.setDitherPattern(1)
+
+    -- spawn glaciers
+    if #glaciers == 0 or (math.random(75) == 1 and glaciers[#glaciers]:getBoundsRect().y > h / 3) then
+        local newGlac = makeGlacier(math.random(w), -10, 14, 4)
+        if not isIntersecting then
+            glaciers[#glaciers + 1] = newGlac
+        end
+    end
+
+    -- boat
+
+    boat_w, boat_h, boat_x_glob = 15, 25, boat_x + x
+    boat = geo.polygon.new(
+        boat_x_glob - (boat_w / 2), y + h - 1,
+        boat_x_glob - (boat_w / 2) + 2, y + h - (boat_h * .6),
+        boat_x_glob, y + h - boat_h,
+        boat_x_glob + (boat_w / 2) - 2, y + h - (boat_h * .6),
+        boat_x_glob + (boat_w / 2), y + h - 1
+    )
+    gfx.drawPolygon(boat)
+    gfx.fillCircleAtPoint(boat_x_glob, y + h - 4, 2)
+    gfx.fillCircleAtPoint(boat_x_glob, y + h - 9, 2)
+
+    if playdate.buttonIsPressed(playdate.kButtonLeft) then
+        boat_x -= 2
+    elseif playdate.buttonIsPressed(playdate.kButtonRight) then
+        boat_x += 2
+    end
+
+    -- update + draw glaciers
+    gfx.setScreenClipRect(x, y, w, h)
+    updatedGlaciers = {}
+    for i = 1, #glaciers do
+        glaciers[i]:translate(0, 1)
+        local locGlacier = glaciers[i]:copy()
+        locGlacier:translate(x, y)
+        gfx.drawPolygon(locGlacier)
+        if locGlacier:intersects(boat) then
+            gameOver("boat")
+        elseif locGlacier:getBoundsRect():intersects(geo.rect.new(x, y, w, h)) then
+            updatedGlaciers[#updatedGlaciers + 1] = glaciers[i]
+        end
+    end
+    glaciers = updatedGlaciers
+end
+
 -- box manage + layout
 
 screen_w, screen_h = playdate.display.getWidth(), playdate.display.getHeight()
@@ -169,6 +239,7 @@ boxes = {
     buttonBox,
     crankBox,
     hourglassBox,
+    boatBox,
 }
 
 layouts = {
@@ -180,7 +251,7 @@ layouts = {
     { { x = 40, y = 0, },                         { x = 200, y = 0, },             { x = mid_x - half_w, y = mid_y, } },
     -- 4: small grid
     {
-        { x = 0, y = 0, }, { x = 160, y = 0, },
+        { x = 0,  y = 0, }, { x = 160, y = 0, },
         { x = 80, y = mid_y, }, { x = 240, y = mid_y, }
     },
     -- 5: trapezoid
@@ -226,6 +297,9 @@ function offloadBoxes()
 
     hour_idx = 0
 
+    glaciers = {}
+    boat_x = box_w / 2
+
     popSong:setFinishCallback(function() end)
     popSong:setOffset(0)
     popSong:stop()
@@ -244,7 +318,6 @@ function runBoxes()
     end
 
     if (timer >= time_limit and lossReason == nil) then
-        print('win!')
         boxIndex += 1
         setBox(boxIndex)
     end
