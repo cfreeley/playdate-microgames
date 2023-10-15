@@ -6,14 +6,28 @@ import "CoreLibs/crank"
 import "CoreLibs/keyboard"
 
 local gfx <const> = playdate.graphics
+local snd <const> = playdate.sound
 lossReason = nil
 
 local alarmSprite = nil
 local alarmOff = gfx.image.new("Images/alarmOff")
 local alarmOn = gfx.image.new("Images/alarmOn")
 alarmSprite = gfx.sprite.new( alarmOff )
-alarmSprite:setZIndex(100)
 alarmSprite:add()
+
+local victSprite = nil
+local victOn = gfx.image.new("Images/victrolaLoud")
+local victOff = gfx.image.new("Images/victrolaQuiet")
+victSprite = gfx.sprite.new( victrolaLoud )
+victSprite:add()
+local popSong = snd.sampleplayer.new("Audio/pop")
+
+local function drawBox(x, y, w, h)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillRect(x, y, w, h)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawRect(x, y, w, h)
+end
 
 function drawBackground()
     local thermo_per = 1 - math.min(timer / time_limit, 1)
@@ -46,11 +60,8 @@ bgSprite = gfx.sprite.setBackgroundDrawingCallback(drawBackground)
 
 -- box logic
 
-local function drawBox(x, y, w, h)
-    gfx.setColor(gfx.kColorWhite)
-    gfx.fillRect(x, y, w, h)
-    gfx.setColor(gfx.kColorBlack)
-    gfx.drawRect(x, y, w, h)
+function gameOver(reason)
+    lossReason = reason
 end
 
 alarmTimer, alarmLen = 0, 20
@@ -63,8 +74,7 @@ local function buttonBox(x, y, w, h)
     if alarmTimer == alarmLen then
         alarmSprite:setImage(alarmOn)
     elseif alarmTimer > alarmLen * 3 then
-        lossReason = 'button'
-        timer = time_limit
+        gameOver("button")
     end
 
     if playdate.buttonJustPressed(playdate.kButtonB) and alarmTimer >= alarmLen then
@@ -76,6 +86,31 @@ local function buttonBox(x, y, w, h)
     gfx.drawCircleAtPoint(ball_x, ball_y + 20, ball_r)
 end
 
+crankIdx = 0
+local function crankBox(x, y, w, h)
+    if not popSong:isPlaying() then
+        popSong:setFinishCallback(function () gameOver("crank") end)
+        popSong:play()
+    end
+
+    if (timer % 4 == 0) then
+        crankIdx += 1
+    end
+
+    cTicks = playdate.getCrankTicks(12)
+    print(popSong:getOffset())
+    if math.abs(cTicks) > 0 then
+        print('?')
+        popSong:setOffset(popSong:getOffset() - math.abs(cTicks / 6))
+        -- popSong:playAt(popSong:getOffset())
+        print(popSong:getOffset())
+    end
+
+    victSprite:setVisible(true)
+    victSprite:setImage((crankIdx % 2 == 1) and victOn or victOff)
+    victSprite:moveTo(x + (w/2), y + (h/2))
+end
+
 -- box manage + layout
 
 screen_w, screen_h = playdate.display.getWidth(), playdate.display.getHeight()
@@ -84,7 +119,7 @@ buffer_w, buffer_x = screen_w - (box_w * 3), box_w * 3
 mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
-boxes = { buttonBox }
+boxes = { buttonBox, crankBox }
 layouts = {
     -- initial: center
     { { x = mid_x - half_w, y = mid_y - half_h, } },
@@ -129,10 +164,17 @@ setBox(boxIndex)
 
 function offloadBoxes()
     timer = 0
+    bgSprite:setVisible(false)
+    
     alarmSprite:setVisible(false)
     alarmSprite:setImage(alarmOff)
     alarmTimer = -20
-    bgSprite:setVisible(false)
+
+    victSprite:setVisible(false)
+
+    popSong:setFinishCallback(function () end)
+    popSong:stop()
+    
 end
 offloadBoxes()
 

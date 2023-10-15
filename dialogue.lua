@@ -37,7 +37,8 @@ function offloadDialogue()
 end
 
 lossConvos = {
-    button={"Oh buddy, what happened?\nYou didn't press the button in time!", "I'm gonna have to dock that from your pay.\nLet's try again, huh?"}
+    button={"Oh buddy, what happened?\nYou didn't press the button in time!", "I'm gonna have to dock that from your pay.\nLet's try again, huh?"},
+    crank={"Oh buddy, what happened?\nYou let the song run out!", "Remember to turn the crank before it does.\nLet's try again, huh?"},
 }
 
 introText = {
@@ -91,6 +92,5 @@ function runDialogue()
         return false
     end
 
-    -- gfx.sprite.update()
     return true
 end
