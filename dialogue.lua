@@ -19,15 +19,13 @@ local bobOpenImg, bobCloseImg
 -- A function to set up our game environment.
 
 function initGraphics()
-
     bobOpenImg = gfx.image.new("Images/bobHappy")
     bobCloseImg = gfx.image.new("Images/bobSmile")
 
-    bobSprite = gfx.sprite.new( bobOpenImg )
-    bobSprite:moveTo( 200, 120 ) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
-    bobSprite:add() -- This is critical!
+    bobSprite = gfx.sprite.new(bobOpenImg)
+    bobSprite:moveTo(200, 120)   -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
+    bobSprite:add()              -- This is critical!
     bobSprite:setVisible(false)
-
 end
 
 initGraphics()
@@ -37,8 +35,12 @@ function offloadDialogue()
 end
 
 lossConvos = {
-    button={"Oh buddy, what happened?\nYou didn't press the button in time!", "I'm gonna have to dock that from your pay.\nLet's try again, huh?"},
-    crank={"Oh buddy, what happened?\nYou let the song run out!", "Remember to turn the crank before it does.\nLet's try again, huh?"},
+    button = { "Oh buddy, what happened?\nYou didn't press the button in time!",
+        "I'm gonna have to dock that from your pay.\nLet's try again, huh?" },
+    crank = { "Oh buddy, what happened?\nYou let the song run out!",
+        "Remember to turn the crank before it does.\nLet's try again, huh?" },
+    sand= { "Oh buddy, what happened?\nYou let the hourglass run out!",
+    "Remember to press \"DOWN\" to flip the hourglass\nbefore the sand runs out.\nLet's try again, huh?" },
 }
 
 introText = {
@@ -50,26 +52,34 @@ introText = {
 }
 
 onboardCrankText = {
-    "Hey Joe- are you busy?", "No? Wonderful!", "Can you keep an eye on this victrola?", "This music helps productivity but it needs to be\ncranked. If you ever hear the song start to\nrun out, just start cranking.", "And don't forget to keep pressing that button!"
+    "Hey Joe- are you busy?", "No? Wonderful!", "Can you keep an eye on this victrola?",
+    "This music helps productivity but it needs to be\ncranked. If you ever hear the song start to\nrun out, just start cranking.",
+    "And don't forget to keep pressing that button!"
+}
+
+onboardHourglassText = {
+    "Hey Joe- are you busy?", "No? Wonderful!\nYou're on hourglass duty then.",
+    "Make sure the hourglass doesn't run out of time.\nDon't ask why.\nHit the \"DOWN\" button before the sand runs\nout to flip it over.",
+    "And don't forget to keep pressing that button!", "Or winding that victrola"
 }
 
 victoryText = {
     "Congratulations, you did it!", "You're position is no longer required and\nyour employment has been released!"
 }
 
-conversations = { introText, onboardCrankText, victoryText }
+conversations = { introText, onboardCrankText, onboardHourglassText, victoryText }
 convIndex, textIndex, animIdx, chatIdx = 1, 1, 1, 1
 
 -- returns if still active
 function runDialogue()
     bobSprite:setVisible(true)
     curConv = conversations[convIndex]
-    
+
     if lossReason ~= nil then
         curConv = lossConvos[lossReason]
     end
 
-    curTxt = curConv[textIndex]
+    curTxt = curConv[textIndex] or ":)"
     gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
 
     animIdx += 1
@@ -89,10 +99,14 @@ function runDialogue()
         end
     end
 
-    if textIndex > #curConv then
-        if lossReason == nil and convIndex <= #conversations then
+    if textIndex > #curConv or playdate.buttonJustPressed(playdate.kButtonB) then
+        if convIndex >= #conversations then
+            return true
+        end
+
+        if lossReason == nil then
             convIndex += 1
-        else 
+        else
             lossReason = nil
         end
 

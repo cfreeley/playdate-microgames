@@ -100,7 +100,6 @@ local function crankBox(x, y, w, h)
     cTicks = playdate.getCrankTicks(12)
     if math.abs(cTicks) > 0 then
         popSong:setOffset(math.max(popSong:getOffset() - math.abs(cTicks / 3), 0))
-        print(popSong:getOffset())
     end
 
     victSprite:setVisible(true)
@@ -133,19 +132,29 @@ local function hourglassBox(x, y, w, h)
         gameOver("sand")
     end
 
+    -- top sand
     gfx.setDitherPattern(.5)
     gfx.fillTriangle(x + padding + sand_pad, y + padding + sand_pad, x + w - padding - sand_pad, y + padding + sand_pad,
         x + (w / 2), y + (h / 2))
 
+    -- bottom sand
     gfx.fillTriangle(x + padding, y + h - padding, x + w - padding, y + h - padding, x + (w / 2), y + (h / 2))
-    gfx.setColor(gfx.kColorWhite)
+    gfx.setColor(gfx.kColorWhite) -- erase small triangle off full triangle to make sand pool
     gfx.setDitherPattern(0)
     gfx.fillTriangle(x + padding + sand_pad, y + h - padding - sand_pad, x + w - padding - sand_pad, y + h - padding -
     sand_pad, x + (w / 2), y + (h / 2))
 
+    -- sand line
     gfx.setColor(gfx.kColorBlack)
+    gfx.setDitherPattern(1 - (math.random() / 2))
+    gfx.drawLine(x + (w / 2), y + (h / 2), x + (w / 2), y + h - padding)
+
+    -- hourglass
+    gfx.setDitherPattern(0)
     gfx.drawTriangle(x + padding, y + padding, x + w - padding, y + padding, x + (w / 2), y + (h / 2))
     gfx.drawTriangle(x + padding, y + h - padding, x + w - padding, y + h - padding, x + (w / 2), y + (h / 2))
+    gfx.fillRect(x + padding - 1, y + padding - 2, w - (padding * 2) + 2, 2)
+    gfx.fillRect(x + padding - 1, y + h - padding, w - (padding * 2) + 2, 3)
 end
 
 -- box manage + layout
@@ -157,9 +166,9 @@ mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
 boxes = {
-    hourglassBox,
     buttonBox,
     crankBox,
+    hourglassBox,
 }
 
 layouts = {
@@ -171,8 +180,8 @@ layouts = {
     { { x = 40, y = 0, },                         { x = 200, y = 0, },             { x = mid_x - half_w, y = mid_y, } },
     -- 4: small grid
     {
-        { x = 40, y = 0, }, { x = 200, y = 0, },
-        { x = 40, y = mid_y, }, { x = 200, y = mid_y, }
+        { x = 0, y = 0, }, { x = 160, y = 0, },
+        { x = 80, y = mid_y, }, { x = 240, y = mid_y, }
     },
     -- 5: trapezoid
     {
@@ -193,6 +202,7 @@ layouts = {
 currentBoxes = {}
 
 function setBox(bIndx)
+    time_limit = 250 + (bIndx * 50)
     currentBoxes = {}
     for i = 1, #layouts[bIndx] do
         currentBoxes[i] = layouts[bIndx][i]
@@ -200,8 +210,8 @@ function setBox(bIndx)
     end
 end
 
-local boxIndex = 1
-timer, time_limit = 0, 400
+boxIndex = 1
+timer, time_limit = 0, 300
 setBox(boxIndex)
 
 function offloadBoxes()
@@ -214,7 +224,10 @@ function offloadBoxes()
 
     victSprite:setVisible(false)
 
+    hour_idx = 0
+
     popSong:setFinishCallback(function() end)
+    popSong:setOffset(0)
     popSong:stop()
 end
 
@@ -224,6 +237,7 @@ function runBoxes()
     bgSprite:setVisible(true)
     gfx.sprite.redrawBackground()
     timer += 1
+    time_out = timer < time_limit
 
     for i = 1, #currentBoxes do
         currentBoxes[i].run(currentBoxes[i].x, currentBoxes[i].y, box_w, box_h)
@@ -231,8 +245,9 @@ function runBoxes()
 
     if (timer >= time_limit and lossReason == nil) then
         print('win!')
-        setBox(boxIndex + 1)
+        boxIndex += 1
+        setBox(boxIndex)
     end
 
-    return timer < time_limit and lossReason == nil
+    return time_out and lossReason == nil
 end
