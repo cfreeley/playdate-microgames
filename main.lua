@@ -8,6 +8,8 @@ import "boxes"
 
 local gfx <const> = playdate.graphics
 local playerSprite = nil
+is_intro, is_endless, data = true, false, nil
+select_idx, blink_timer, is_blinked = 1, 0, false
 
 -- A function to set up our game environment.
 
@@ -15,26 +17,27 @@ function initGraphics()
     local playerImage = gfx.image.new("Images/playerImage")
     playerSprite = gfx.sprite.new(playerImage)
     playerSprite:moveTo(0, 0)
+
+    data = playdate.datastore.read()
+    printTable(data)
 end
 
 initGraphics()
 
-is_intro, is_endless, data = true, false, nil
-select_idx, blink_timer, is_blinked = 1, 0, false
 function introRoom()
     options = { "NEW" }
-    data = playdate.datastore.read()
     if data ~= nil and data.roomId ~= nil and data.roomId > 1 then
-        options[2] = "CONTINUE"
-        if data.roomId > max_rooms then
-            options[3] = "ENDLESS"
-        end
+        options[#options + 1] = "CONTINUE"
     end
-    
+
+    if data ~= nil and data.roomId ~= nil and (data.roomId > max_rooms or data.is_endless) then
+        options[#options + 1] = "ENDLESS"
+    end
+
     cursor_height = BOTTOM / 2 + (select_idx - 1) * 30 + 10
     gfx.fillTriangle(70, cursor_height, 65, cursor_height - 5, 65, cursor_height + 5)
-    for i=1, #options do
-        gfx.drawText(options[i], 80, BOTTOM / 2 + (i-1) * 30)
+    for i = 1, #options do
+        gfx.drawText(options[i], 80, BOTTOM / 2 + (i - 1) * 30)
     end
 
     if playdate.buttonJustPressed(playdate.kButtonDown) and select_idx < #options then
@@ -58,6 +61,7 @@ function introRoom()
 
     if playdate.buttonJustPressed(playdate.kButtonA) then
         is_intro = false
+        roomIdx = 0
         if options[select_idx] == "CONTINUE" then
             setBox(data.roomId)
         elseif options[select_idx] == "ENDLESS" then
@@ -68,8 +72,8 @@ function introRoom()
 end
 
 function playdate.gameWillTerminate()
-    playdate.datastore.write({ roomId= boxIndex})
-    printTable(playdate.datastore.read())
+    local highest_room = data ~= nil and data.roomId ~= nil and math.max(boxIndex, data.roomId) or boxIndex
+    playdate.datastore.write({ roomId = highest_room, is_endless = data.is_endless or boxIndex >= max_rooms })
 end
 
 -- `playdate.update()` is the heart of every Playdate game.
@@ -77,12 +81,9 @@ end
 -- Use this function to poll input, run game logic, and move sprites.
 
 BOTTOM, TOP, LEFT, RIGHT = 240, 0, 0, 400
-rooms, roomIdx, max_rooms = { { run = runDialogue, offload = offloadDialogue }, { run = runBoxes, offload = offloadBoxes } }, 0, 4
+rooms, roomIdx, max_rooms =
+{ { run = runDialogue, offload = offloadDialogue }, { run = runBoxes, offload = offloadBoxes } }, 0, 4
 function playdate.update()
-    -- Call the functions below in playdate.update() to draw sprites and keep
-    -- timers updated. (We aren't using timers in this example, but in most
-    -- average-complexity games, you will.)
-
     gfx.sprite.update()
     playdate.timer.updateTimers()
 

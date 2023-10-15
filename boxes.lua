@@ -274,6 +274,9 @@ currentBoxes = {}
 
 function setBox(bIndx)
     boxIndex = bIndx
+    if data ~= nil then
+        data.roomId = boxIndex
+    end
     time_limit = 250 + (bIndx * 50)
     currentBoxes = {}
     for i = 1, #layouts[bIndx] do

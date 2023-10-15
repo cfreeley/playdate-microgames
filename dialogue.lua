@@ -76,6 +76,10 @@ victoryText = {
     "Congratulations, you did it!", "You're position is no longer required and\nyour employment has been released!"
 }
 
+endlessText = {
+    "You're still here? Uh okay.", "I guess you can just keep working then!"
+}
+
 conversations = { introText, onboardCrankText, onboardHourglassText, onboardBoatText, victoryText }
 textIndex, animIdx, chatIdx, blinkIndx = 1, 1, 1, 1
 
@@ -87,12 +91,15 @@ function runDialogue()
 
     if lossReason ~= nil then
         curConv = lossConvos[lossReason]
+    elseif is_endless then
+        curConv = endlessText
     end
 
-    curTxt = curConv[textIndex] or ":)"
+    curTxt = curConv[textIndex]
     gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
 
     if convIndex >= 4 then
+        gfx.drawRect(bobSprite.x - 42, bobSprite.y -32, 84, 64)
         gfx.drawRect(bobSprite.x - 40, bobSprite.y -30, 80, 60)
         if blinkIndx % 2 == 1 then
             gfx.fillCircleAtPoint(bobSprite.x - 32, bobSprite.y - 22, 4)
@@ -119,9 +126,10 @@ function runDialogue()
         end
     end
 
-    if textIndex > #curConv or playdate.buttonJustPressed(playdate.kButtonB) then
+    if textIndex > #curConv then
         if convIndex >= #conversations and lossReason == nil then
-            return true
+            is_intro = true
+            data.is_endless = true
         end
 
         if lossReason == nil then
