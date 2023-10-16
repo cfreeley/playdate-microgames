@@ -78,15 +78,15 @@ onboardBoatText = {
 
 onboardBalloonText = {
     "Heeeey Jerry, you're not busy are you?",
-    "Love it. One of the VPs is coming to visit the yacht\nbut his executive hot air balloon is running out of air.",
-    "You should be able to refuel it by pressing the \"UP\" button.\nMake sure to hold it down so it gets plenty of air",
+    "Love it. One of the VPs is coming to visit the\nyacht but his executive hot air balloon is running\nout of air.",
+    "You should be able to refuel it by pressing the\n\"UP\" button. Make sure to hold it down so it\ngets plenty of air",
     "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass.",
     "Or steering my yacht."
 }
 
 onboardShooterText = {
-    "Company's under attack, mind grabbing that turret\nand defending it?",
-    "Just press the \"A\" button whent he turret is lined up to shoot.\nMake sure to clear them out before too many pile up.",
+    "Company's under attack, mind grabbing that\nturret and defending it?",
+    "Just press the \"A\" button whent he turret is lined\nup to shoot. Make sure to clear them out before\ntoo many pile up.",
     "You're a doll, Jack!",
     "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass.",
     "Or steering my yacht.", "Or inflating that balloon."
@@ -100,7 +100,7 @@ endlessText = {
     "You're still here? Uh okay.", "I guess you can just keep working then!"
 }
 
-conversations = { introText, onboardCrankText, onboardHourglassText, onboardBoatText, victoryText }
+conversations = { introText, onboardCrankText, onboardHourglassText, onboardBoatText, onboardBalloonText, onboardShooterText, victoryText }
 textIndex, animIdx, chatIdx, blinkIndx = 1, 1, 1, 1
 
 -- returns if still active

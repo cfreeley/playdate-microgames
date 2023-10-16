@@ -111,6 +111,7 @@ end
 hour_idx, hour_len = 0, 200
 flip_idx = 0
 local function hourglassBox(x, y, w, h)
+    gfx.setScreenClipRect(x, y, w, h)
     hour_idx += 1
     padding, max_pad = 30, w / 2
     hour_per = (hour_idx / hour_len)
@@ -175,6 +176,7 @@ end
 
 glaciers, boat_x, flip_wave = {}, 0, 0
 local function boatBox(x, y, w, h)
+    gfx.setScreenClipRect(x, y, w, h)
     -- if timer % 30 == 0 then
     --     flip_wave += 1
     -- end
@@ -185,9 +187,7 @@ local function boatBox(x, y, w, h)
     -- spawn glaciers
     if #glaciers == 0 or (math.random(75) == 1 and glaciers[#glaciers]:getBoundsRect().y > h / 3) then
         local newGlac = makeGlacier(math.random(w), -10, 14, 4)
-        if not isIntersecting then
-            glaciers[#glaciers + 1] = newGlac
-        end
+        glaciers[#glaciers + 1] = newGlac
     end
 
     -- boat
@@ -211,7 +211,6 @@ local function boatBox(x, y, w, h)
     end
 
     -- update + draw glaciers
-    gfx.setScreenClipRect(x, y, w, h)
     updatedGlaciers = {}
     for i = 1, #glaciers do
         glaciers[i]:translate(0, 1)
@@ -238,7 +237,7 @@ function balloonBox(x, y, w, h)
 
     if playdate.buttonJustPressed(playdate.kButtonUp) then
         is_pressing_up = true
-    elseif balloon_y <= -(balloon_r/2) or playdate.buttonJustReleased(playdate.kButtonUp) then
+    elseif balloon_y <= -(balloon_r / 2) or playdate.buttonJustReleased(playdate.kButtonUp) then
         is_pressing_up = false
     end
 
@@ -246,7 +245,7 @@ function balloonBox(x, y, w, h)
         balloon_y -= 1.5
     end
 
-    cur_r = math.floor( (balloon_r - min_r) * (1 - (balloon_y / max_balloon_y)) + min_r )
+    cur_r = math.floor((balloon_r - min_r) * (1 - (balloon_y / max_balloon_y)) + min_r)
     print(cur_r)
 
     gfx.setScreenClipRect(x, y, w, h)
@@ -255,10 +254,68 @@ function balloonBox(x, y, w, h)
     gfx.fillRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 6)
     gfx.setDitherPattern(0)
     gfx.drawRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 6)
-    gfx.drawLine(x + (w/2) - 2, y + balloon_y + cur_r, x + (w/2) - 2, y + balloon_y + cur_r + 2)
-    gfx.drawLine(x + (w/2) + 1, y + balloon_y + cur_r, x + (w/2) + 1, y + balloon_y + cur_r + 2)
+    gfx.drawLine(x + (w / 2) - 2, y + balloon_y + cur_r, x + (w / 2) - 2, y + balloon_y + cur_r + 2)
+    gfx.drawLine(x + (w / 2) + 1, y + balloon_y + cur_r, x + (w / 2) + 1, y + balloon_y + cur_r + 2)
 
+    gfx.setDitherPattern(.5)
     gfx.drawLine(x, y + h - 12, x + w, y + h - 12)
+    gfx.setDitherPattern(0)
+end
+
+local function drawSaucer(x, y, s)
+    gfx.drawCircleAtPoint(x, y, s)
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillEllipseInRect(x - (s * 1.5), y, s * 3, s)
+    gfx.setColor(gfx.kColorBlack)
+    gfx.drawEllipseInRect(x - (s * 1.5), y, s * 3, s)
+    gfx.setDitherPattern(.25)
+    gfx.fillEllipseInRect(x - (s * 1.5), y, s * 3, s)
+    gfx.setDitherPattern(0)
+end
+
+saucers, bullets, turret_ang, ang_spd = {}, {}, 90, 1
+function shooterBox(x, y, w, h)
+    if math.random(100) == 1 and (#saucers == 0 or saucers[#saucers].y > y + (h / 4)) then
+        local newSauc = {
+            x = math.random(w - 24) + 12 + x,
+            y = y,
+            s = 8,
+            spd = .5 * (math.random() > .5 and -1 or 1),
+            bounds = function(slf) return geo.rect.new(slf.x - (slf.s * 1.5), slf.y, slf.s * 3, slf.s) end
+        }
+        saucers[#saucers + 1] = newSauc
+    end
+
+
+    gfx.setScreenClipRect(x, y, w, h)
+    updSaucers = {}
+    for i = 1, #saucers do
+        local curS = saucers[i]
+        drawSaucer(curS.x, curS.y, curS.s)
+        curS.x += curS.spd
+        curS.y += math.abs(curS.spd / 5)
+        if curS.x < x then
+            curS.spd = math.abs(curS.spd)
+        elseif curS.x > x + w then
+            curS.spd = -math.abs(curS.spd)
+        end
+        if curS.y > y + h - 24 then
+            gameOver("shooter")
+        elseif curS:bounds():intersects(geo.rect.new(x, y, w, h)) then
+            updSaucers[#updSaucers + 1] = curS
+        end
+    end
+    saucers = updSaucers
+
+    -- turret
+    turret_ang += ang_spd
+    if turret_ang >= 180 then
+        ang_spd = -math.abs(ang_spd)
+    elseif turret_ang <= 0 then
+        ang_spd = math.abs(ang_spd)
+    end
+    gfx.drawCircleAtPoint(x + (w / 2), y + h, 12)
+    gfx.drawLine(x + (w / 2), y + h - 12, x + (w / 2), y + h - 24)
 end
 
 -- box manage + layout
@@ -270,12 +327,12 @@ mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
 boxes = {
-    balloonBox,
     buttonBox,
     crankBox,
     hourglassBox,
     boatBox,
-    shooterBox
+    balloonBox,
+    shooterBox,
 }
 max_rooms = #boxes
 
@@ -283,27 +340,39 @@ layouts = {
     -- initial: center
     { { x = mid_x - half_w, y = mid_y - half_h, } },
     -- 2: parallel
-    { { x = 40, y = mid_y - half_h, },            { x = 200, y = mid_y - half_h, } },
+    {
+        { x = 40,  y = mid_y - half_h, }, -- L
+        { x = 200, y = mid_y - half_h, }  -- R
+    },
     -- 3: T-shape
-    { { x = 40, y = 0, },                         { x = 200, y = 0, },             { x = mid_x - half_w, y = mid_y, } },
+    {
+        { x = 40,             y = 0, },    -- L
+        { x = 200,            y = 0, },    -- R
+        { x = mid_x - half_w, y = mid_y, } -- D
+    },
     -- 4: small grid
     {
-        { x = 0,  y = 0, }, { x = 160, y = 0, },
-        { x = 80, y = mid_y, }, { x = 240, y = mid_y, }
+        { x = 0,   y = 0, },     -- 1
+        { x = 160, y = 0, },     -- 2
+        { x = 240, y = mid_y, }, -- 4
+        { x = 80,  y = mid_y, }, -- 3
     },
     -- 5: trapezoid
     {
-        { x = 0,  y = 0, }, { x = box_w, y = 0, }, { x = box_w * 2, y = 0, },
-        { x = 40, y = mid_y, }, { x = 200, y = mid_y, }
+        { x = box_w,     y = 0, }, -- 2
+        { x = box_w * 2, y = 0, }, -- 3
+        { x = 200,       y = mid_y, }, -- 5
+        { x = 40,        y = mid_y, }, -- 4
+        { x = 0,         y = 0, }, -- 1
     },
     -- 6: full grid
     {
-        { x = 0,         y = 0, },
-        { x = box_w,     y = 0, },
-        { x = box_w * 2, y = 0, },
-        { x = 0,         y = box_h, },
-        { x = box_w,     y = box_h, },
-        { x = box_w * 2, y = box_h, },
+        { x = box_w,     y = 0, },     -- 2
+        { x = box_w * 2, y = 0, },     -- 3
+        { x = box_w,     y = box_h, }, -- 5
+        { x = 0,         y = box_h, }, -- 4
+        { x = 0,         y = 0, },     -- 1
+        { x = box_w * 2, y = box_h, }, -- 6
     }
 }
 
@@ -342,6 +411,11 @@ function offloadBoxes()
     boat_x = box_w / 2
 
     balloon_y = 0
+    is_pressing_up = false
+
+    saucers = {}
+    bullets = {}
+    turret_ang = 0
 
     popSong:setFinishCallback(function() end)
     popSong:setOffset(0)
