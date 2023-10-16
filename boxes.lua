@@ -227,7 +227,7 @@ local function boatBox(x, y, w, h)
     glaciers = updatedGlaciers
 end
 
-balloon_y, balloon_r, min_r = 0, 30, 20
+balloon_y, balloon_r, min_r, is_pressing_up = 0, 30, 20, false
 function balloonBox(x, y, w, h)
     max_balloon_y = h - (18 + min_r)
     if balloon_y < max_balloon_y then
@@ -236,8 +236,14 @@ function balloonBox(x, y, w, h)
         gameOver("balloon")
     end
 
-    if playdate.buttonIsPressed(playdate.kButtonUp) and balloon_y > 0 then
-        balloon_y -= 2
+    if playdate.buttonJustPressed(playdate.kButtonUp) then
+        is_pressing_up = true
+    elseif balloon_y <= -(balloon_r/2) or playdate.buttonJustReleased(playdate.kButtonUp) then
+        is_pressing_up = false
+    end
+
+    if is_pressing_up then
+        balloon_y -= 1.5
     end
 
     cur_r = math.floor( (balloon_r - min_r) * (1 - (balloon_y / max_balloon_y)) + min_r )
@@ -245,7 +251,12 @@ function balloonBox(x, y, w, h)
 
     gfx.setScreenClipRect(x, y, w, h)
     gfx.drawCircleAtPoint(x + (w / 2), y + balloon_y, cur_r)
-    gfx.drawRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 4)
+    gfx.setDitherPattern(.5)
+    gfx.fillRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 6)
+    gfx.setDitherPattern(0)
+    gfx.drawRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 6)
+    gfx.drawLine(x + (w/2) - 2, y + balloon_y + cur_r, x + (w/2) - 2, y + balloon_y + cur_r + 2)
+    gfx.drawLine(x + (w/2) + 1, y + balloon_y + cur_r, x + (w/2) + 1, y + balloon_y + cur_r + 2)
 
     gfx.drawLine(x, y + h - 12, x + w, y + h - 12)
 end
