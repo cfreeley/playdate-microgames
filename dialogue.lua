@@ -45,8 +45,8 @@ lossConvos = {
         "Remember to press \"LEFT\" and \"RIGHT\" to\nsteer the ship away. Let's try again, huh?" },
     balloon = { "Not the VP of Consumer Synergy!\nKeep an eye on that elevation.",
         "Remember to press \"UP\" to fill the hot air balloon.\nLet's try again, huh?" },
-    shooter = { "Dial Co. made it into the building! You need to make sure you shoot down\nany intruders",
-        "Remember to press \"A\" when the turret is aligned to destroy them." }
+    shooter = { "Dial Co. made it into the building! You need to make\nsure you shoot down any intruders",
+        "Remember to press \"A\" when the turret is aligned\nto destroy them." }
 }
 
 introText = {

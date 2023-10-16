@@ -170,19 +170,33 @@ function makeGlacier(x, y, r, v)
         points[i].y += math.random(-v, v)
         points[i] = geo.point.new(points[i].x, points[i].y)
     end
-    points[6] = points[1]
-    return geo.polygon.new(table.unpack(points))
+    glac = geo.polygon.new(table.unpack(points))
+    glac:close()
+    return glac
 end
 
 glaciers, boat_x, flip_wave = {}, 0, 0
 local function boatBox(x, y, w, h)
     gfx.setScreenClipRect(x, y, w, h)
-    -- if timer % 30 == 0 then
-    --     flip_wave += 1
-    -- end
-    -- gfx.setDitherPattern(flip_wave % 2 == 0 and .9 or .8)
-    -- gfx.fillRect(x, y, w, h)
-    -- gfx.setDitherPattern(1)
+    for i = 0, 4 do -- row
+        for j = 0, 3 do -- col
+            wave = {}
+            for k = 0, 3 do -- teeth
+                local time_off, alternate_off, wav_w, wav_off = timer/4, (i % 2 * (w / 2)), 3 * 10, k * 8
+                local wx = (time_off + alternate_off + (j * w/3)) % (w + wav_w) - wav_w + wav_off + x
+                -- (math.sin(math.rad(timer * 2)) * 10)
+                local wy = (i * (h / 5) + (h / 8) + 0 + (j % 2 * -10) + timer + (math.sin(math.rad(timer * 2)) * 6)) % h + y
+                wave[#wave + 1] = wx
+                wave[#wave + 1] = wy
+                if k ~= 3 then
+                    wave[#wave + 1] = wx
+                    wave[#wave + 1] = wy - 4
+                end
+            end
+            local poly = geo.polygon.new(table.unpack(wave))
+            gfx.drawPolygon(poly)
+        end
+    end
 
     -- spawn glaciers
     if #glaciers == 0 or (math.random(75) == 1 and glaciers[#glaciers]:getBoundsRect().y > h / 3) then
@@ -200,6 +214,10 @@ local function boatBox(x, y, w, h)
         boat_x_glob + (boat_w / 2) - 2, y + h - (boat_h * .6),
         boat_x_glob + (boat_w / 2), y + h - 1
     )
+    boat:close()
+    gfx.setColor(gfx.kColorWhite)
+    gfx.fillPolygon(boat)
+    gfx.setColor(gfx.kColorBlack)
     gfx.drawPolygon(boat)
     gfx.fillCircleAtPoint(boat_x_glob, y + h - 4, 2)
     gfx.fillCircleAtPoint(boat_x_glob, y + h - 9, 2)
@@ -216,6 +234,9 @@ local function boatBox(x, y, w, h)
         glaciers[i]:translate(0, 1)
         local locGlacier = glaciers[i]:copy()
         locGlacier:translate(x, y)
+        gfx.setColor(gfx.kColorWhite)
+        gfx.fillPolygon(locGlacier)
+        gfx.setColor(gfx.kColorBlack)
         gfx.drawPolygon(locGlacier)
         if locGlacier:intersects(boat) then
             gameOver("boat")
@@ -273,8 +294,48 @@ local function drawSaucer(x, y, s)
     gfx.setDitherPattern(0)
 end
 
-saucers, bullets, turret_ang, ang_spd = {}, {}, 90, 1
+saucers, bullets, turret_ang, ang_spd, reload_time, reload, bullet_speed = {}, {}, 90, 3, 30, 0, 6
 function shooterBox(x, y, w, h)
+    gfx.setScreenClipRect(x, y, w, h)
+
+    -- turret
+    turret_ang += ang_spd
+    if turret_ang >= 135 then
+        ang_spd = -math.abs(ang_spd)
+    elseif turret_ang <= 45 then
+        ang_spd = math.abs(ang_spd)
+    end
+
+    barrel_x = math.cos(math.rad(turret_ang)) * 12
+    barrel_y = math.sin(math.rad(turret_ang)) * 12
+    gfx.drawCircleAtPoint(x + (w / 2), y + h, 12)
+    gfx.drawLine(x + (w / 2) + barrel_x, y + h - barrel_y, x + (w / 2) + (barrel_x * 1.5), y + h - (barrel_y * 1.5))
+
+    -- bullets
+
+    if playdate.buttonJustPressed(playdate.kButtonA) and reload <= 0 then
+        reload = reload_time
+        bullets[#bullets + 1] = {
+            x = x + (w / 2) + (barrel_x * 1.5),
+            y = y + h - (barrel_y * 1.5),
+            ang = turret_ang
+        }
+    else
+        reload = math.max(0, reload - 1)
+    end
+
+    updBulls = {}
+    for i = 1, #bullets do
+        cur_b = bullets[i]
+        gfx.drawCircleAtPoint(cur_b.x, cur_b.y, 2)
+        cur_b.x += math.cos(math.rad(cur_b.ang)) * bullet_speed
+        cur_b.y -= math.sin(math.rad(cur_b.ang)) * bullet_speed
+        if geo.rect.new(x, y, w, h):containsPoint(cur_b.x, cur_b.y) then
+            updBulls[#updBulls + 1] = cur_b
+        end
+    end
+    bullets = updBulls
+
     if math.random(100) == 1 and (#saucers == 0 or saucers[#saucers].y > y + (h / 4)) then
         local newSauc = {
             x = math.random(w - 24) + 12 + x,
@@ -286,8 +347,8 @@ function shooterBox(x, y, w, h)
         saucers[#saucers + 1] = newSauc
     end
 
+    -- saucers
 
-    gfx.setScreenClipRect(x, y, w, h)
     updSaucers = {}
     for i = 1, #saucers do
         local curS = saucers[i]
@@ -302,20 +363,16 @@ function shooterBox(x, y, w, h)
         if curS.y > y + h - 24 then
             gameOver("shooter")
         elseif curS:bounds():intersects(geo.rect.new(x, y, w, h)) then
-            updSaucers[#updSaucers + 1] = curS
+            is_hit = false
+            for _, bull in pairs(bullets) do
+                is_hit = is_hit or curS:bounds():containsPoint(bull.x, bull.y)
+            end
+            if not is_hit then
+                updSaucers[#updSaucers + 1] = curS
+            end
         end
     end
     saucers = updSaucers
-
-    -- turret
-    turret_ang += ang_spd
-    if turret_ang >= 180 then
-        ang_spd = -math.abs(ang_spd)
-    elseif turret_ang <= 0 then
-        ang_spd = math.abs(ang_spd)
-    end
-    gfx.drawCircleAtPoint(x + (w / 2), y + h, 12)
-    gfx.drawLine(x + (w / 2), y + h - 12, x + (w / 2), y + h - 24)
 end
 
 -- box manage + layout
@@ -327,10 +384,10 @@ mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
 boxes = {
+    boatBox,
     buttonBox,
     crankBox,
     hourglassBox,
-    boatBox,
     balloonBox,
     shooterBox,
 }
@@ -341,14 +398,14 @@ layouts = {
     { { x = mid_x - half_w, y = mid_y - half_h, } },
     -- 2: parallel
     {
-        { x = 40,  y = mid_y - half_h, }, -- L
-        { x = 200, y = mid_y - half_h, }  -- R
+        { x = 40,  y = mid_y - half_h, }, -- 1
+        { x = 200, y = mid_y - half_h, }  -- 2
     },
     -- 3: T-shape
     {
-        { x = 40,             y = 0, },    -- L
-        { x = 200,            y = 0, },    -- R
-        { x = mid_x - half_w, y = mid_y, } -- D
+        { x = 40,             y = 0, },    -- 1
+        { x = 200,            y = 0, },    -- 2
+        { x = mid_x - half_w, y = mid_y, } -- 3
     },
     -- 4: small grid
     {
@@ -359,11 +416,11 @@ layouts = {
     },
     -- 5: trapezoid
     {
-        { x = box_w,     y = 0, }, -- 2
-        { x = box_w * 2, y = 0, }, -- 3
+        { x = box_w,     y = 0, },     -- 2
+        { x = box_w * 2, y = 0, },     -- 3
         { x = 200,       y = mid_y, }, -- 5
         { x = 40,        y = mid_y, }, -- 4
-        { x = 0,         y = 0, }, -- 1
+        { x = 0,         y = 0, },     -- 1
     },
     -- 6: full grid
     {
@@ -415,7 +472,7 @@ function offloadBoxes()
 
     saucers = {}
     bullets = {}
-    turret_ang = 0
+    turret_ang = 90
 
     popSong:setFinishCallback(function() end)
     popSong:setOffset(0)
