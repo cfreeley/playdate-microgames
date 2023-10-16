@@ -31,7 +31,7 @@ local function drawBox(x, y, w, h)
 end
 
 function drawBackground()
-    local thermo_per = 1 - math.min(timer / time_limit, 1)
+    local thermo_per = 1 - math.min((timer % time_limit) / time_limit, 1)
     local thermo_len = (screen_h - 20) - thermo_per * (screen_h - 20)
 
     -- layout UX
@@ -384,10 +384,10 @@ mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
 boxes = {
-    boatBox,
     buttonBox,
     crankBox,
     hourglassBox,
+    boatBox,
     balloonBox,
     shooterBox,
 }
@@ -436,14 +436,14 @@ layouts = {
 currentBoxes = {}
 
 function setBox(bIndx)
-    boxIndex = bIndx
+    boxIndex = math.min(bIndx, #layouts)
     if data ~= nil then
         data.roomId = boxIndex
     end
-    time_limit = 250 + (bIndx * 50)
+    time_limit = 250 + (boxIndex * 50)
     currentBoxes = {}
-    for i = 1, #layouts[bIndx] do
-        currentBoxes[i] = layouts[bIndx][i]
+    for i = 1, #layouts[boxIndex] do
+        currentBoxes[i] = layouts[boxIndex][i]
         currentBoxes[i].run = boxes[i] ~= nil and boxes[i] or buttonBox
     end
 end
@@ -484,16 +484,14 @@ offloadBoxes()
 function runBoxes()
     bgSprite:setVisible(true)
     gfx.sprite.redrawBackground()
-    if not is_endless then
-        timer += 1
-    end
+    timer += 1
     time_out = timer < time_limit
 
     for i = 1, #currentBoxes do
         currentBoxes[i].run(currentBoxes[i].x, currentBoxes[i].y, box_w, box_h)
     end
 
-    if (timer >= time_limit and lossReason == nil) then
+    if (timer >= time_limit and not is_endless and lossReason == nil) then
         setBox(boxIndex + 1)
     end
 
