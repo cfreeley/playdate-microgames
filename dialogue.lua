@@ -23,8 +23,8 @@ function initGraphics()
     bobCloseImg = gfx.image.new("Images/bobSmile")
 
     bobSprite = gfx.sprite.new(bobOpenImg)
-    bobSprite:moveTo(200, 120)   -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
-    bobSprite:add()              -- This is critical!
+    bobSprite:moveTo(200, 120) -- this is where the center of the sprite is placed; (200,120) is the center of the Playdate screen
+    bobSprite:add()            -- This is critical!
     bobSprite:setVisible(false)
 end
 
@@ -39,10 +39,14 @@ lossConvos = {
         "I'm gonna have to dock that from your pay.\nLet's try again, huh?" },
     crank = { "Oh buddy, what happened?\nYou let the song run out!",
         "Remember to turn the crank before it does.\nLet's try again, huh?" },
-    sand= { "Oh buddy, what happened?\nYou let the hourglass run out!",
-    "Remember to press \"DOWN\" to flip the hourglass\nbefore the sand runs out.\nLet's try again, huh?" },
-    boat= { "My man, you almost killed me!\nYou've got to watch out for those icebergs.",
-    "Remember to press \"LEFT\" and \"RIGHT\" to\nsteer the ship away. Let's try again, huh?" },
+    sand = { "Oh buddy, what happened?\nYou let the hourglass run out!",
+        "Remember to press \"DOWN\" to flip the hourglass\nbefore the sand runs out.\nLet's try again, huh?" },
+    boat = { "My man, you almost killed me!\nYou've got to watch out for those icebergs.",
+        "Remember to press \"LEFT\" and \"RIGHT\" to\nsteer the ship away. Let's try again, huh?" },
+    balloon = { "Not the VP of Consumer Synergy!\nKeep an eye on that elevation.",
+        "Remember to press \"UP\" to fill the hot air balloon.\nLet's try again, huh?" },
+    shooter = { "Dial Co. made it into the building! You need to make sure you shoot down\nany intruders",
+        "Remember to press \"A\" when the turret is aligned to destroy them." }
 }
 
 introText = {
@@ -72,6 +76,22 @@ onboardBoatText = {
     "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass."
 }
 
+onboardBalloonText = {
+    "Heeeey Jerry, you're not busy are you?",
+    "Love it. One of the VPs is coming to visit the yacht\nbut his executive hot air balloon is running out of air.",
+    "You should be able to refuel it by pressing the \"UP\" button.\nMake sure to hold it down so it gets plenty of air",
+    "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass.",
+    "Or steering my yacht."
+}
+
+onboardShooterText = {
+    "Company's under attack, mind grabbing that turret\nand defending it?",
+    "Just press the \"A\" button whent he turret is lined up to shoot.\nMake sure to clear them out before too many pile up.",
+    "You're a doll, Jack!",
+    "And don't forget to keep pressing that button!", "Or winding that victrola.", "Or flipping that hourglass.",
+    "Or steering my yacht.", "Or inflating that balloon."
+}
+
 victoryText = {
     "Congratulations, you did it!", "You're position is no longer required and\nyour employment has been released!"
 }
@@ -99,8 +119,8 @@ function runDialogue()
     gfx.drawText(curTxt:sub(0, animIdx), 16, 16)
 
     if convIndex >= 4 then
-        gfx.drawRect(bobSprite.x - 42, bobSprite.y -32, 84, 64)
-        gfx.drawRect(bobSprite.x - 40, bobSprite.y -30, 80, 60)
+        gfx.drawRect(bobSprite.x - 42, bobSprite.y - 32, 84, 64)
+        gfx.drawRect(bobSprite.x - 40, bobSprite.y - 30, 80, 60)
         if blinkIndx % 2 == 1 then
             gfx.fillCircleAtPoint(bobSprite.x - 32, bobSprite.y - 22, 4)
         end

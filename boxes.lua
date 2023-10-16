@@ -227,6 +227,29 @@ local function boatBox(x, y, w, h)
     glaciers = updatedGlaciers
 end
 
+balloon_y, balloon_r, min_r = 0, 30, 20
+function balloonBox(x, y, w, h)
+    max_balloon_y = h - (18 + min_r)
+    if balloon_y < max_balloon_y then
+        balloon_y += .5
+    else
+        gameOver("balloon")
+    end
+
+    if playdate.buttonIsPressed(playdate.kButtonUp) and balloon_y > 0 then
+        balloon_y -= 2
+    end
+
+    cur_r = math.floor( (balloon_r - min_r) * (1 - (balloon_y / max_balloon_y)) + min_r )
+    print(cur_r)
+
+    gfx.setScreenClipRect(x, y, w, h)
+    gfx.drawCircleAtPoint(x + (w / 2), y + balloon_y, cur_r)
+    gfx.drawRect(x + (w / 2) - 4, y + balloon_y + cur_r + 2, 8, 4)
+
+    gfx.drawLine(x, y + h - 12, x + w, y + h - 12)
+end
+
 -- box manage + layout
 
 screen_w, screen_h = playdate.display.getWidth(), playdate.display.getHeight()
@@ -236,11 +259,14 @@ mid_x, mid_y = (screen_w - buffer_w) / 2, screen_h / 2
 half_w, half_h = box_w / 2, box_h / 2
 
 boxes = {
+    balloonBox,
     buttonBox,
     crankBox,
     hourglassBox,
     boatBox,
+    shooterBox
 }
+max_rooms = #boxes
 
 layouts = {
     -- initial: center
@@ -303,6 +329,8 @@ function offloadBoxes()
 
     glaciers = {}
     boat_x = box_w / 2
+
+    balloon_y = 0
 
     popSong:setFinishCallback(function() end)
     popSong:setOffset(0)

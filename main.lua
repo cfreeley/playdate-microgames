@@ -81,8 +81,8 @@ end
 -- Use this function to poll input, run game logic, and move sprites.
 
 BOTTOM, TOP, LEFT, RIGHT = 240, 0, 0, 400
-rooms, roomIdx, max_rooms =
-{ { run = runDialogue, offload = offloadDialogue }, { run = runBoxes, offload = offloadBoxes } }, 0, 4
+rooms, roomIdx =
+{ { run = runDialogue, offload = offloadDialogue }, { run = runBoxes, offload = offloadBoxes } }, 0
 function playdate.update()
     gfx.sprite.update()
     playdate.timer.updateTimers()
