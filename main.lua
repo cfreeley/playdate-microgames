@@ -8,7 +8,7 @@ import "boxes"
 
 local gfx <const> = playdate.graphics
 local playerSprite = nil
-is_intro, is_endless, data = true, false, nil
+is_intro, is_endless, has_won, data = true, false, false, nil
 select_idx, blink_timer, is_blinked = 1, 0, false
 
 -- A function to set up our game environment.

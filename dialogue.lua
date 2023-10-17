@@ -113,6 +113,8 @@ function runDialogue()
         curConv = lossConvos[lossReason]
     elseif is_endless then
         curConv = endlessText
+    elseif has_won then
+        curConv = victoryText
     end
 
     curTxt = curConv[textIndex]
@@ -147,7 +149,7 @@ function runDialogue()
     end
 
     if textIndex > #curConv then
-        if convIndex >= #conversations and lossReason == nil then
+        if has_won and lossReason == nil then
             is_intro = true
             data.is_endless = true
         end

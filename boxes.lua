@@ -294,7 +294,7 @@ local function drawSaucer(x, y, s)
     gfx.setDitherPattern(0)
 end
 
-saucers, bullets, turret_ang, ang_spd, reload_time, reload, bullet_speed = {}, {}, 90, 3, 30, 0, 6
+saucers, bullets, turret_ang, ang_spd, reload_time, reload, bullet_speed = {}, {}, 90, 3, 20, 0, 8
 function shooterBox(x, y, w, h)
     gfx.setScreenClipRect(x, y, w, h)
 
@@ -436,7 +436,12 @@ layouts = {
 currentBoxes = {}
 
 function setBox(bIndx)
-    boxIndex = math.min(bIndx, #layouts)
+    if bIndx > #layouts then
+        has_won = true
+    else
+        boxIndex = bIndx
+    end
+
     if data ~= nil then
         data.roomId = boxIndex
     end
