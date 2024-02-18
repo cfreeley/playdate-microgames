@@ -9,6 +9,7 @@ local gfx <const> = playdate.graphics
 local geo <const> = playdate.geometry
 local snd <const> = playdate.sound
 lossReason = nil
+endlessScore = 0
 
 local alarmSprite = nil
 local alarmOff = gfx.image.new("Images/alarmOff")
@@ -22,6 +23,12 @@ local victOff = gfx.image.new("Images/victrolaQuiet")
 victSprite = gfx.sprite.new(victrolaLoud)
 victSprite:add()
 local popSong = snd.sampleplayer.new("Audio/pop")
+
+local clockSong = snd.sampleplayer.new("Audio/clock")
+local fallingSong = snd.sampleplayer.new("Audio/falling")
+local radarSong = snd.sampleplayer.new("Audio/radar")
+local invasionSong = snd.sampleplayer.new("Audio/invader")
+local wrongSong = snd.sampleplayer.new("Audio/wrong")
 
 local function drawBox(x, y, w, h)
     gfx.setColor(gfx.kColorWhite)
@@ -62,6 +69,13 @@ bgSprite = gfx.sprite.setBackgroundDrawingCallback(drawBackground)
 -- box logic
 
 function gameOver(reason)
+    popSong:setOffset(0)
+    popSong:stop()
+    clockSong:stop()
+    fallingSong:stop()
+    radarSong:stop()
+    invasionSong:stop()
+    wrongSong:play()
     lossReason = reason
 end
 
@@ -73,9 +87,10 @@ local function buttonBox(x, y, w, h)
 
     alarmTimer += 1
     if alarmTimer == alarmLen then
+        playdate.sound.synth.new():playMIDINote("Db3", 1, .1)
         alarmSprite:setImage(alarmOn)
     elseif alarmTimer > alarmLen * 3 then
-        gameOver("button")
+        return gameOver("button")
     end
 
     if playdate.buttonJustPressed(playdate.kButtonB) and alarmTimer >= alarmLen then
@@ -90,7 +105,7 @@ end
 crankIdx = 0
 local function crankBox(x, y, w, h)
     if not popSong:isPlaying() then
-        popSong:setFinishCallback(function() gameOver("crank") end)
+        popSong:setFinishCallback(function() return gameOver("crank") end)
         popSong:play()
     end
 
@@ -131,7 +146,13 @@ local function hourglassBox(x, y, w, h)
     end
 
     if hour_per > 1 then
-        gameOver("sand")
+        return gameOver("sand")
+    elseif hour_per > .5 and not clockSong:isPlaying() then
+        clockSong:setOffset(0)
+        clockSong:setVolume(.5)
+        clockSong:play()
+    elseif hour_per <= .5 then
+        clockSong:stop()
     end
 
     -- top sand
@@ -228,6 +249,8 @@ local function boatBox(x, y, w, h)
         boat_x += 2
     end
 
+    local radarMask = boat:getBoundsRect()
+    radarMask.y -= 30
     -- update + draw glaciers
     updatedGlaciers = {}
     for i = 1, #glaciers do
@@ -239,9 +262,14 @@ local function boatBox(x, y, w, h)
         gfx.setColor(gfx.kColorBlack)
         gfx.drawPolygon(locGlacier)
         if locGlacier:intersects(boat) then
-            gameOver("boat")
+            return gameOver("boat")
         elseif locGlacier:getBoundsRect():intersects(geo.rect.new(x, y, w, h)) then
             updatedGlaciers[#updatedGlaciers + 1] = glaciers[i]
+        end
+
+        if locGlacier:getBoundsRect():intersects(radarMask) and not radarSong:isPlaying() then
+            radarSong:setOffset(0)
+            radarSong:play()
         end
     end
     glaciers = updatedGlaciers
@@ -250,13 +278,21 @@ end
 balloon_y, balloon_r, min_r, is_pressing_up = 0, 30, 20, false
 function balloonBox(x, y, w, h)
     max_balloon_y = h - (18 + min_r)
+
+    if not is_pressing_up and balloon_y > max_balloon_y * .75 and not fallingSong:isPlaying() then
+        fallingSong:setOffset(0)
+        fallingSong:play()
+    end
+
     if balloon_y < max_balloon_y then
         balloon_y += .5
     else
-        gameOver("balloon")
+        return gameOver("balloon")
     end
 
+
     if playdate.buttonJustPressed(playdate.kButtonUp) then
+        fallingSong:stop()
         is_pressing_up = true
     elseif balloon_y <= -(balloon_r / 2) or playdate.buttonJustReleased(playdate.kButtonUp) then
         is_pressing_up = false
@@ -267,7 +303,6 @@ function balloonBox(x, y, w, h)
     end
 
     cur_r = math.floor((balloon_r - min_r) * (1 - (balloon_y / max_balloon_y)) + min_r)
-    print(cur_r)
 
     gfx.setScreenClipRect(x, y, w, h)
     gfx.drawCircleAtPoint(x + (w / 2), y + balloon_y, cur_r)
@@ -341,7 +376,7 @@ function shooterBox(x, y, w, h)
             x = math.random(w - 24) + 12 + x,
             y = y,
             s = 8,
-            spd = .5 * (math.random() > .5 and -1 or 1),
+            spd = 1 * (math.random() > .5 and -1 or 1),
             bounds = function(slf) return geo.rect.new(slf.x - (slf.s * 1.5), slf.y, slf.s * 3, slf.s) end
         }
         saucers[#saucers + 1] = newSauc
@@ -349,7 +384,7 @@ function shooterBox(x, y, w, h)
 
     -- saucers
 
-    updSaucers = {}
+    updSaucers, dangerMusic = {}, false
     for i = 1, #saucers do
         local curS = saucers[i]
         drawSaucer(curS.x, curS.y, curS.s)
@@ -361,7 +396,7 @@ function shooterBox(x, y, w, h)
             curS.spd = -math.abs(curS.spd)
         end
         if curS.y > y + h - 24 then
-            gameOver("shooter")
+            return gameOver("shooter")
         elseif curS:bounds():intersects(geo.rect.new(x, y, w, h)) then
             is_hit = false
             for _, bull in pairs(bullets) do
@@ -371,8 +406,19 @@ function shooterBox(x, y, w, h)
                 updSaucers[#updSaucers + 1] = curS
             end
         end
+
+        if curS.y > y + h - 60 then
+            dangerMusic = true
+        end
     end
     saucers = updSaucers
+
+    if dangerMusic and not invasionSong:isPlaying() then
+        invasionSong:setOffset(0)
+        invasionSong:play()
+    elseif not dangerMusic then
+        invasionSong:stop()
+    end
 end
 
 -- box manage + layout
@@ -445,7 +491,7 @@ function setBox(bIndx)
     if data ~= nil then
         data.roomId = boxIndex
     end
-    time_limit = 250 + (boxIndex * 50)
+    time_limit = 550 + (boxIndex * 50)
     currentBoxes = {}
     for i = 1, #layouts[boxIndex] do
         currentBoxes[i] = layouts[boxIndex][i]
@@ -454,7 +500,7 @@ function setBox(bIndx)
 end
 
 boxIndex = 1
-timer, time_limit = 0, 300
+timer, time_limit = 0, 0
 setBox(boxIndex)
 
 function offloadBoxes()
@@ -482,6 +528,16 @@ function offloadBoxes()
     popSong:setFinishCallback(function() end)
     popSong:setOffset(0)
     popSong:stop()
+    clockSong:setOffset(0)
+    clockSong:stop()
+    radarSong:setOffset(0)
+    radarSong:stop()
+    invasionSong:setOffset(0)
+    invasionSong:stop()
+    fallingSong:setOffset(0)
+    fallingSong:stop()
+
+    endlessScore = 0
 end
 
 offloadBoxes()
@@ -492,8 +548,15 @@ function runBoxes()
     timer += 1
     time_out = timer < time_limit
 
+    if timeout and is_endless then
+        timeout = false
+        endlessScore += 1
+    end
+
     for i = 1, #currentBoxes do
-        currentBoxes[i].run(currentBoxes[i].x, currentBoxes[i].y, box_w, box_h)
+        if lossReason == nil then
+            currentBoxes[i].run(currentBoxes[i].x, currentBoxes[i].y, box_w, box_h)
+        end
     end
 
     if (timer >= time_limit and not is_endless and lossReason == nil) then

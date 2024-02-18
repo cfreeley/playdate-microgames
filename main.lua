@@ -20,6 +20,15 @@ function initGraphics()
 
     data = playdate.datastore.read()
     printTable(data)
+
+    local menu = playdate.getSystemMenu()
+
+    local menuItem, error = menu:addMenuItem("Return to title", function()
+        curRoom.offload()
+        has_won = false
+        is_endless = false
+        is_intro = true
+    end)
 end
 
 initGraphics()
@@ -59,7 +68,7 @@ function introRoom()
     gfx.drawTextAligned("BUTTON FACTORY", RIGHT / 2, BOTTOM / 4, kTextAlignment.center)
     gfx.setImageDrawMode(playdate.graphics.kDrawModeFillBlack)
 
-    if playdate.buttonJustPressed(playdate.kButtonA) then
+    if playdate.buttonJustReleased(playdate.kButtonA) then
         is_intro = false
         roomIdx = 0
         if options[select_idx] == "CONTINUE" then
@@ -67,6 +76,8 @@ function introRoom()
         elseif options[select_idx] == "ENDLESS" then
             is_endless = true
             setBox(max_rooms)
+        else
+            setBox(1)
         end
     end
 end

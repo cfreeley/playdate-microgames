@@ -31,6 +31,7 @@ end
 initGraphics()
 
 function offloadDialogue()
+    textIndex = 1
     bobSprite:setVisible(false)
 end
 
@@ -52,7 +53,7 @@ lossConvos = {
 introText = {
     "Hello, your name is Joe. right?",
     "Excellent! Welcome to the Button Factory.\nWe're excited to have you join our family.",
-    "Since you're not busy,\nhow about you help us with this button?",
+    "Since you're not busy...\nHow about you help us with this button?",
     "It's very simple. When the light goes on,\npress \"B\". Get it? \"B\" for button!",
     "Easy as that.\nAnyway, how about you get started and I\ncome back when I find some more work for you?"
 }
@@ -151,7 +152,9 @@ function runDialogue()
     if textIndex > #curConv then
         if has_won and lossReason == nil then
             is_intro = true
+            has_won = false
             data.is_endless = true
+            return false
         end
 
         if lossReason == nil then
